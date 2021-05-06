@@ -92,17 +92,30 @@
 (format t "Symbol: ~S ~%" lexeme)
    (list (cond
          ((string=   lexeme "program")  'PROGRAM )
+         ((string=   lexeme "input"  )  'INPUT   )
+         ((string=   lexeme "output" )  'OUTPUT  )
          ((string=   lexeme "var"    )  'VAR     )
+         ((string=   lexeme "begin"  )  'BEGIN   )
+         ((string=   lexeme "end"    )  'END     )
+         ((string=   lexeme "boolean")  'BOOL    )
+         ((string=   lexeme "integer")  'INT     )
+         ((string=   lexeme "real"   )  'REAL    )
+         ((is-id     lexeme          )  'ID      )
+         ((is-number lexeme          )  'NUM     )
          ((string=   lexeme ":="     )  'ASSIGN  )
          ((string=   lexeme "("      )  'LEFTP   )
          ((string=   lexeme ")"      )  'RIGHTP  )
+         ((string=   lexeme "*"      )  'MULT    )
+         ((string=   lexeme "+"      )  'PLUS    )
          ((string=   lexeme ","      )  'COMMA   )
+         ((string=   lexeme "-"      )  'SUB     )
+         ((string=   lexeme "."      )  'PERIOD  )
+         ((string=   lexeme "/"      )  'BSLASH  )
+         ((string=   lexeme ":"      )  'COL     )
          ((string=   lexeme ";"      )  'SEMI    )
-
-
-         ((string=   lexeme ""       )	'EOF     )
-         ((is-id     lexeme          )  'ID      )
-         ((is-number lexeme          )  'NUM     )
+         ((string=   lexeme "="      )  'EQU     )
+         ((string=   lexeme ""       )	 'EOF     )
+         
          (t                             'UNKNOWN )
          )
     lexeme)
@@ -114,6 +127,7 @@
 
 (defun is-id (str)
 ;; *** TO BE DONE ***
+   (and  (alpha-char-p (char str 0)) (every #'alphanumericp str) ) 
 )
 
 (defun is-number (str)
@@ -282,9 +296,14 @@
 
 ;;=====================================================================
 (defun program-header (state)
-    ;;(match  state program)
-    ;;(match  state id)
-    ;;(match  state "(")
+    (match  state 'PROGRAM)
+    (match  state 'ID)
+    (match  state 'LEFTP)
+    (match  state 'INPUT)
+    (match  state 'COMMA)
+    (match  state 'OUTPUT)
+    (match  state 'RIGHTP)
+    (match  state 'SEMI)
 )
 ;;=====================================================================
 
@@ -295,8 +314,8 @@
 ;;=====================================================================
 (defun program (state)
    (program-header state)
-   (var-part       state)
-   (stat-part      state)
+   ;;(var-part       state)
+   ;;(stat-part      state)
 )
 
 ;;=====================================================================
@@ -344,13 +363,13 @@
 ; THE PARSER - test all files
 ;;=====================================================================
 
-;; (parse-all)
+;;(parse-all)
 
 ;;=====================================================================
 ; THE PARSER - test a single file
 ;;=====================================================================
 
-;;(parse "testfiles/testok1.pas")
+(parse "testfiles/testok1.pas")
 
 ;;=====================================================================
 ; THE PARSER - end of code
