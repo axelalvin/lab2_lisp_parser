@@ -126,12 +126,11 @@
 ;;=====================================================================
 
 (defun is-id (str)
-;; *** TO BE DONE ***
    (and  (alpha-char-p (char str 0)) (every #'alphanumericp str) ) 
 )
 
 (defun is-number (str)
-;; *** TO BE DONE ***
+   (every #'digit-char-p str) 
 )
 
 ;;=====================================================================
