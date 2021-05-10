@@ -100,9 +100,11 @@
          ((string=   lexeme "boolean")  'BOOL    )
          ((string=   lexeme "integer")  'INT     )
          ((string=   lexeme "real"   )  'REAL    )
-         ((is-id     lexeme          )  'ID      )
-         ((is-number lexeme          )  'NUM     )
          ((string=   lexeme ":="     )  'ASSIGN  )
+         ((string=   lexeme "undef"  )  'UNDEF  )
+         ((string=   lexeme "predef" )  'PREDEF )
+         ((string=   lexeme "error"  )  'ERROR  )
+         ((string=   lexeme "type"   )  'TYPE   )
          ((string=   lexeme "("      )  'LEFTP   )
          ((string=   lexeme ")"      )  'RIGHTP  )
          ((string=   lexeme "*"      )  'MULT    )
@@ -115,6 +117,8 @@
          ((string=   lexeme ";"      )  'SEMI    )
          ((string=   lexeme "="      )  'EQU     )
          ((string=   lexeme ""       )	 'EOF     )
+         ((is-id     lexeme          )  'ID      )
+         ((is-number lexeme          )  'NUM     )
          
          (t                             'UNKNOWN )
          )
@@ -191,11 +195,14 @@
 ;;=====================================================================
 
 (defun symtab-add (state id)
-;; *** TO BE DONE ***
+	(if (not (symtab-member state id))
+		(setf (pstate-symtab state) (append (pstate-symtab state) (list id)))
+	   (semerr1 state) 
+	)
 )
-
+	
 (defun symtab-member (state id)
-;; *** TO BE DONE ***
+	(if(member id (pstate-symtab state) :test #'equal) (RETURN-FROM symtab-member t))
 )
 
 (defun symtab-display (state)
@@ -242,7 +249,6 @@
     (format t "*** Semantic error: found ~8S expected EOF.~%"
           (lexeme state))
     (setf (pstate-status state) 'NOTOK)
-    ;; *** TO BE DONE - completed! ***
 )
 
 ;;=====================================================================
@@ -307,6 +313,11 @@
 )
 
 (defun assign-stat (state)
+   (if (eq (token state) 'ID)
+      (if (not (symtab-member state (lexeme state)))
+         (semerr2 state)
+      )
+   )
    (match state 'ID)
    (match state 'ASSIGN)
    (expr state)
@@ -345,11 +356,17 @@
 (defun factor (state)
    (if(eq (token state) 'LEFTP)
       (factor-aux state)
-   (operand state)
+      (operand state)
    )
 )
 
 (defun operand (state)
+   (if (eq (token state) 'ID) 
+      (if (not (symtab-member state (lexeme state)))
+		      (semerr2 state) 
+      ) 
+	)
+
    (cond 
          ((eq (token state) 'ID) (match state 'ID))
          ((eq (token state) 'NUM) (match state 'NUM))
@@ -370,14 +387,10 @@
    (var-dec-list state)
 )
 
-(defun var-dec-list-aux (state)
-   (var-dec-list state)
-)
-
 (defun var-dec-list (state)
    (var-dec state)
    (if(eq (token state) 'ID)
-      (var-dec-list-aux state)
+      (var-dec-list state)
    )
 )
 
@@ -394,6 +407,13 @@
 )
 
 (defun id-list (state)
+   (if(eq (token state) 'ID)
+      (if (not (symtab-member state (lexeme state)))
+         (symtab-add state (lexeme state))
+         (semerr1 state)
+      )
+   )
+   
    (match state 'ID)
    (if(eq (token state) 'COMMA)
       (id-list-aux state)
@@ -433,15 +453,16 @@
 ; THE PARSER - parse a file
 ;;=====================================================================
 (defun check-end-aux (state)
-   (semerr3 state)
-   (match state (token state))
-   (check-end state)
+	(semerr3 state) 
+   (get-token state)
+	(check-end state)
 )
 
 (defun check-end (state)
-   (if (not (eq (token state) 'EOF))
-      (check-end-aux state)
-   )
+	(cond 
+      ((not (eq (token state) 'EOF)) (check-end-aux state))
+      (t nil)         		
+	)
 )
 
 ;;=====================================================================
@@ -473,21 +494,41 @@
 
 (defun parse-all ()
 
-;; *** TO BE DONE ***
+	(dribble "parse_all.out")
 
+	(mapcar #'parse '(
+		"testfiles/testa.pas" "testfiles/testb.pas" "testfiles/testc.pas"
+		"testfiles/testd.pas" "testfiles/teste.pas" "testfiles/testf.pas"
+		"testfiles/testg.pas" "testfiles/testh.pas" "testfiles/testi.pas"
+		"testfiles/testj.pas" "testfiles/testk.pas" "testfiles/testl.pas"
+		"testfiles/testm.pas" "testfiles/testn.pas" "testfiles/testo.pas"
+		"testfiles/testp.pas" "testfiles/testq.pas" "testfiles/testr.pas"
+		"testfiles/tests.pas" "testfiles/testt.pas" "testfiles/testu.pas"
+		"testfiles/testv.pas" "testfiles/testw.pas" "testfiles/testx.pas"
+		"testfiles/testy.pas" "testfiles/testz.pas" "testfiles/testok1.pas" 
+      "testfiles/testok2.pas" "testfiles/testok3.pas"
+		"testfiles/testok4.pas" "testfiles/testok5.pas" 
+      "testfiles/testok6.pas" "testfiles/testok7.pas"
+		"testfiles/fun1.pas" "testfiles/fun2.pas" "testfiles/fun3.pas"
+		"testfiles/fun4.pas" "testfiles/fun5.pas"
+		"testfiles/sem1.pas" "testfiles/sem2.pas" "testfiles/sem3.pas"
+		"testfiles/sem4.pas" "testfiles/sem5.pas")
+	)
+
+	(dribble)
 )
 
 ;;=====================================================================
 ; THE PARSER - test all files
 ;;=====================================================================
 
-;;(parse-all)
+(parse-all)
 
 ;;=====================================================================
 ; THE PARSER - test a single file
 ;;=====================================================================
 
-(parse "testfiles/testok1.pas")
+;;(parse "testfiles/testok1.pas")
 
 ;;=====================================================================
 ; THE PARSER - end of code
