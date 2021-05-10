@@ -179,9 +179,11 @@
 ; lexeme - returns the lexeme from (token lexeme)(reader)
 ;;=====================================================================
 
-(defun token  (state) ;; *** TO BE DONE ***
+(defun token  (state)
+   (first (pstate-lookahead state))
 )
-(defun lexeme (state) ;; *** TO BE DONE *** 
+(defun lexeme (state) 
+   (second (pstate-lookahead state))
 )
 
 ;;=====================================================================
@@ -281,7 +283,79 @@
 ; <operand>       --> id | number
 ;;=====================================================================
 
-;; *** TO BE DONE ***
+(defun stat-part (state)
+   (match state 'BEGIN)
+   (stat-list state)
+   (match state 'END)
+   (match state 'PERIOD)
+)
+
+(defun stat-list-aux (state)
+   (match state 'SEMI)
+   (stat-list state)
+)
+
+(defun stat-list (state)
+   (stat state)
+   (if(eq (token state) 'SEMI) 
+      (stat-list-aux state)
+   )
+)
+
+(defun stat (state)
+   (assign-stat state)
+)
+
+(defun assign-stat (state)
+   (match state 'ID)
+   (match state 'ASSIGN)
+   (expr state)
+)
+
+(defun expr-aux (state)
+   (match state 'PLUS)
+   (expr state)
+)
+
+(defun expr (state)
+   (term state)
+   (if(eq (token state) 'PLUS)
+      (expr-aux state) 
+   )
+)
+
+(defun term-aux (state)
+   (match state 'MULT)
+   (term state)
+)
+
+(defun term (state)
+   (factor state)
+   (if(eq (token state) 'MULT)
+      (term-aux state)
+   )
+)
+
+(defun factor-aux (state)
+   (match state 'LEFTP)
+   (expr state)
+   (match state 'RIGHTP)
+)
+
+(defun factor (state)
+   (if(eq (token state) 'LEFTP)
+      (factor-aux state)
+   (operand state)
+   )
+)
+
+(defun operand (state)
+   (cond 
+         ((eq (token state) 'ID) (match state 'ID))
+         ((eq (token state) 'NUM) (match state 'NUM))
+         (t (synerr3 state))
+   )
+)
 
 ;;=====================================================================
 ; <var-part>     --> var <var-dec-list>
@@ -291,7 +365,49 @@
 ; <type>         --> integer | real | boolean
 ;;=====================================================================
 
-;; *** TO BE DONE ***
+(defun var-part (state)
+   (match state 'VAR)
+   (var-dec-list state)
+)
+
+(defun var-dec-list-aux (state)
+   (var-dec-list state)
+)
+
+(defun var-dec-list (state)
+   (var-dec state)
+   (if(eq (token state) 'ID)
+      (var-dec-list-aux state)
+   )
+)
+
+(defun var-dec (state)
+   (id-list state)
+   (match state 'COL)
+   (type-f state)
+   (match state 'SEMI)
+)
+
+(defun id-list-aux (state)
+   (match state 'COMMA)
+   (id-list state)
+)
+
+(defun id-list (state)
+   (match state 'ID)
+   (if(eq (token state) 'COMMA)
+      (id-list-aux state)
+   )
+)
+
+(defun type-f (state)
+   (cond 
+         ((eq (token state) 'INT) (match state 'INT))
+         ((eq (token state) 'BOOL) (match state 'BOOL))
+         ((eq (token state) 'REAL) (match state 'REAL))
+         (t (synerr2 state))
+   )
+)
 
 ;;=====================================================================
 (defun program-header (state)
@@ -305,24 +421,27 @@
     (match  state 'SEMI)
 )
 ;;=====================================================================
-
-;; *** TO BE DONE ***
-
-;;=====================================================================
 ; <program> --> <program-header><var-part><stat-part>
 ;;=====================================================================
 (defun program (state)
    (program-header state)
-   ;;(var-part       state)
-   ;;(stat-part      state)
+   (var-part       state)
+   (stat-part      state)
 )
 
 ;;=====================================================================
 ; THE PARSER - parse a file
 ;;=====================================================================
+(defun check-end-aux (state)
+   (semerr3 state)
+   (match state (token state))
+   (check-end state)
+)
 
 (defun check-end (state)
-;; *** TO BE DONE ***
+   (if (not (eq (token state) 'EOF))
+      (check-end-aux state)
+   )
 )
 
 ;;=====================================================================
